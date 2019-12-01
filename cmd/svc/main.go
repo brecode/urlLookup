@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	err     error
 	address = *flag.StringP("address", "a", "127.0.0.1",
 		"The address web service listens at, \n")
 	port = *flag.StringP("port", "p", "32697",
 		"The port web service listens at, \n")
 	cfgFile = flag.StringP("cfgFile", "c", "",
 		"Name of the data store configuration file\n")
+	err error
 )
 
 func main() {
@@ -83,7 +83,7 @@ func handleInterrupt(logger *log.Logger, db *db.Database) {
 
 			// close db connection before exiting, log if fails but still exit with code 1 this time
 			if err := db.Close(); err != nil {
-				logger.Errorf("Failed to safely close db, err: %s, err")
+				logger.Errorf("Failed to gracefully close db, err: %s", err)
 				os.Exit(1)
 			}
 

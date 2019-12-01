@@ -29,7 +29,7 @@ func UseRouterDeps(rd func(*Deps)) RouterOption {
 	}
 }
 
-// NewRouter returns a router with routes defined in this package
+// NewRouter returns a new Router with routes defined in this package
 func NewRouter(opts ...RouterOption) *Router {
 
 	r := &Router{}

@@ -72,7 +72,7 @@ func (h *Handler) GetURLData() http.HandlerFunc {
 		h.Logger.Debugf("[HANDLER]: db query key: %x", key)
 
 		if v, found := h.DbClient.Get(fmt.Sprintf("%x", key)); !found {
-			h.Logger.Debugf("[HANDLER]: Key not found, website safe, yay!")
+			h.Logger.Debug("[HANDLER]: Key not found, website safe, yay!")
 			h.httpResponse(w, v)
 			return
 		} else {
@@ -88,7 +88,7 @@ func (h *Handler) UpdateURLData() http.HandlerFunc {
 		url := &model.URLData{}
 
 		if err := json.NewDecoder(req.Body).Decode(url); err != nil {
-			h.Logger.Debug("[HANDLER]: Failed to decode incoming request, err: %s", err)
+			h.Logger.Debugf("[HANDLER]: Failed to decode incoming request, err: %s", err)
 			h.httpErrorResponse(w, err)
 		} else {
 			h.Logger.Debugf("[HANDLER]: Decoded request in JSON  is: %+v", url)
