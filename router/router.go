@@ -7,11 +7,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Router defines the data structure for the Router
 type Router struct {
 	Deps
 	*mux.Router
 }
 
+// Deps introduces the Router dependencies
 type Deps struct {
 	Logger  *log.Logger
 	Handler handler.API
@@ -38,6 +40,7 @@ func NewRouter(opts ...RouterOption) *Router {
 	return r
 }
 
+// Init initializes the Router
 func (r *Router) Init() error {
 
 	r.Router = mux.NewRouter().StrictSlash(true)
@@ -54,6 +57,7 @@ func (r *Router) Init() error {
 	return nil
 }
 
+// Close gracefully stops the Router
 func (r *Router) Close() error {
 	return nil
 }
