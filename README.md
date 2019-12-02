@@ -86,11 +86,10 @@ requests in the lookup service to manually add new URLs for quick testing.
 _**NOTE #1**_: The url data returned is very simplistic in the first iteration as it only returns if a website is
  safe or
 not. There is a lot of room for further improvements by adding for example creation/updates timestamps. The service
-would be able to perform clean-ups for outdated urls after a specific time intervl or check if the URLs are still valid. 
+would be able to perform clean-ups for outdated URLs or if URLs are not valid any more after a time interval. 
    
 _**NOTE #2**_ There were no changes in the incoming format of the GET request, but there is room for improvements on the 
-parsing of the URL and additional validation check according to the RFC.
-  
+parsing of the URL by adding additional validation checks according to the RFC, as well as adding more metadata (i.e timestamps of request) 
 
 ## 1. Build the images
 To build the images needed to run the exercise, browse into the docker folder and issue: 
