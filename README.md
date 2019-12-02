@@ -83,7 +83,7 @@ would be to have a system feeding the uploader with URLs in real time. For this 
 have to take place in the code as the loop is already in place. There is also already implemented support for POST 
 requests in the lookup service to manually add new URLs for quick testing. 
  
-_**NOTE #1**__: The url data returned is very simplistic in the first iteration as it only returns if a website is
+_**NOTE #1**_: The url data returned is very simplistic in the first iteration as it only returns if a website is
  safe or
 not. There is a lot of room for further improvements by adding for example creation/updates timestamps. The service
 would be able to perform clean-ups for outdated urls after a specific time intervl or check if the URLs are still valid. 
