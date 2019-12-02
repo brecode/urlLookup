@@ -19,7 +19,7 @@ import (
 
 var (
 	cfgFile = flag.StringP("cfgFile", "c", "",
-		"Name of the data store configuration file\n")
+		"Name of the configuration file\n")
 	err error
 )
 
@@ -39,21 +39,26 @@ func main() {
 	if err = redis.Init(); err != nil {
 		logger.Fatalf("Failed to initialize db, exiting with error: %+v", err)
 	}
+
 	updtr := updater.NewUpdater(updater.UseUpdaterDeps(
 		func(deps *updater.Deps) {
 			deps.DbClient = redis
 			deps.Config = cfg
 			deps.Logger = logger
 		}))
+	if err = updtr.Init(); err != nil {
+		logger.Fatalf("Failed to initialize updater, exiting with error: %+v", err)
+	}
 
 	// go thread to handle interrupt signal
-	go handleInterrupt(logger, redis, updtr)
+	handleInterrupt(logger, redis, updtr)
 }
 
 func handleInterrupt(logger *log.Logger, db *db.Database, updtr *updater.Updater) {
 	// handle interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+	logger.Info("[UPDATER]: Wait loop")
 
 	for {
 		select {

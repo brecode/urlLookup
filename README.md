@@ -16,3 +16,114 @@ Give some thought to the following:
 2. The number of requests may exceed the capacity of this VM, how might you solve that? Bonus if you implement this.
 3. What are some strategies you might use to update the service with new URLs? Updates may be as much as 5 thousand URLs a day with updates arriving every 10 minutes.
 4. Bonus points if you containerize the app. Email us your ideas.
+
+# Test the environment 
+The exercise was written/tested entirely on MacOS and thus the following instructions assume a similar environment
+ where docker engine is fully supported.
+ 
+Before proceeding, the URL lookup service architecture is explained bellow: 
+```
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                                                                                   |
+|                                                                                                                                                   |
+|                       +--------+          +-------------------------+      +-------------------------+        +------+      +----------+          |
+|                       |        |          |                         |      |      REDIS CLUSTER      |        |      |      |          |          |
+|          +----------->+        |          |        +-------------+  |      |      +-----------+      |        |      +<-----+  FOLDER  |          |
+|          |            |        |          |        |             |  |      |      |           |      |        |  U   |      |  MOUNTS  |          |
+|          |   +------->+   N    |          |   +--->+  LOOKUP     <-------->+      |  REDIS1   |      |        |      |      +----------+          |
+|          |   |        |        |          |   |    |  APP-1      |  |      |      |           |      |        |  P   |                            |
+| +--------+-+ |   +--->+   G    |      +---+---+-+  |             |  |      |      +-----------+      |        |      |                            |
+| |          | |   |    |        |      |         |  +-------------+  |      |      +-----------+      |        |  D   |                            |
+| | CLIENTS  +-+-+ |    |   I    |      | LOOKUP  |                   |      |      |           |      |        |      |      +----------+          |
+| |          |   | |    |        +<---->+ SERVICE |  +-------------+  |      |      |  REDIS2   |      <--------+  A   |      |          |          |
+| +--+-------+   +-++   |   N    |      |         |  |             |  |      |      |           |      |        |      |      |  LIVE    |          |
+|    |           |  |   |        |      +---+---+-+  |  LOOKUP     <-------->+      +-----------+      |        |  T   |      |  UPDATES |          |
+|    +--+--------+  |   |   X    |          |   |    |  APP-2      |  |      |           ...           |        |      |      |          |          |
+|       |           |   |        |          |   +--->+             |  |      |      +-----------+      |        |  E   +<-----+  POST    |          |
+|       +-----------+   |Load    |          |        +-------------+  |      |      |           |      |        |      |      |   /      |          |
+|                       |Balancer|          |                         |      |      |  REDISN   |      |        |  R   |      |  RSS     |          |
+|                       |        |          |                 ...     |      |      |           |      |        |      |      |          |          |
+|                       |        |          |                         |      |      +-----------+      |        |      |      |          |          |
+|                       +--------+          +-------------------------+      +-------------------------+        +------+      +----------+          |
+|                                                                                                                                                   |
+|                                                                                                                                                   |
++---------------------------------------------------------------------------------------------------------------------------------------------------+
+
+```  
+
+To address 2. from the requirements we added an nginx load balancer in front of the lookup service to manage the
+increasing load of requests and if response time is going up. New nodes will be able to be spun up or we can use the
+scaling options of docker swarm to provide with more servicing apps. 
+  
+To address 1. the data store was implemented with a redis cluster of 2 masters and 3 slaves total so that we can
+provide HA for the data. To support the infinite grow of blacklisted URLs we need to have support for
+data persistence into a physical media. The choice of Redis was made since it supports persistence. it also supports
+minimal footprint as the keys can be saved in-memory for faster lookups whereas the data can be stored into a
+physical media. Another point worth mentioning is that redis provides with both HA and Sharding, so if
+we have a need in the future to scale both Writes and Reads, those functionalities are orthogonal and can be
+combined. 
+
+To address 3. our solution provides initial load of blacklisted url from the "Updater" service. Essentially there is 
+a loop that checks every 10-minutes for news files under a mounted in the container folder. A future implementation
+ would be to have a system feeding with URLs the uploader live. For this to be implemented minor changes would have to 
+ take place in the code as the loop is already in place. There is also already implemented support for POST requests 
+ in the lookup service to manually add new URLs. 
+ 
+_**NOTE #1**__: The url data returned is very simplistic in the first iteration as it only returns if a website is
+ safe or
+not. There is a lot of room for further improvements by adding for example creation/updates timestamps. The service
+would thus be possible to clean-up outdated urls after a specific timeframe or even check if the URLs are still valid. 
+   
+_**NOTE #2**_ I decided not to change the incoming format of the GET request but again, there is room for more
+improvements on the parsing of the URL and validation checks according to the RFC.
+  
+
+## 1. Build the images
+To build the images needed to run the exercise, browse into the docker folder and issue: 
+```bash
+$ docker-compose build
+```
+
+When done you should be able to see the following images when executing: 
+```bash
+$ docker ps
+REPOSITORY     TAG       IMAGE ID            CREATED            SIZE
+updater       latest   1d8e8dbb1bab        16 minutes ago      9.14MB
+webapp        latest   ee7a3c89d4d1        20 minutes ago      9.84MB
+
+```
+
+The rest of the images will automatically be downloaded. 
+
+## 2. Initialize a Docker Swarm 
+For the deployment of our service we are going to need a docker swarm. To initialize a new docker swarm execute:
+```bash
+$ docker swarm init
+```
+
+You should be able to see something similar to the following: 
+```bash
+Swarm initialized: current node (f744cqd9un1d5vap95v95lb2f) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-37elfm07sz08683kvs8hhiwoneto1x7z43amhgliglvndmna0i-ccfhdttfvl224xazmtwqelvsc 192.168.65.3:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+```
+
+You are now ready to deploy the URL lookup service. Just run: 
+```bash 
+docker stack deploy --compose-file docker-compose.yaml urllookup
+```
+
+To check if a website is legit you can browse into the blacklist folder, pick a URL and query from the browser like so:
+```bash
+$ http://0.0.0.0/urlinfo/1/dl.downf468.com/n/3.0.26.3/4789537/setup.exe
+```
+
+or from a terminal
+```bash
+$    curl -vv -X GET http://0.0.0.0/urlinfo/1/dl.downf468.com/n/3.0.26.3/4789537/setup.exe
+```
+

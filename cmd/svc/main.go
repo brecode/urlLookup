@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	address = *flag.StringP("address", "a", "127.0.0.1",
+	address = *flag.StringP("address", "a", "0.0.0.0",
 		"The address web service listens at, \n")
 	port = *flag.StringP("port", "p", "32697",
 		"The port web service listens at, \n")
 	cfgFile = flag.StringP("cfgFile", "c", "",
-		"Name of the data store configuration file\n")
+		"Name of the configuration file\n")
 	err error
 )
 
